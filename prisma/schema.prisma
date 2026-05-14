@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  PASSENGER
+  DRIVER
+}
+
+enum RideStatus {
+  REQUESTED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+enum ItemType {
+  RESTAURANT
+  HOTEL
+  TOURIST_SPOT
+}
+
+model AdminUser {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  role     String @default("ADMIN")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  password          String
+  name              String
+  phone             String
+  photoUrl          String?
+  preferredLanguage String    @default("pt")
+  userType          UserType  // ✅ ADICIONADO
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driverProfile    DriverProfile?
+  ridesAsPassenger Ride[]  @relation("PassengerRides")
+  ridesAsDriver    Ride[]  @relation("DriverRides")
+  ratingsGiven     Rating[] @relation("PassengerRatings")
+  ratingsReceived  Rating[] @relation("DriverRatings")
+  favorites        Favorite[]
+}
+
+model DriverProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  vehicleModel     String
+  vehiclePlate     String
+  vehicleColor     String
+  licenseNumber    String
+  rating           Float    @default(5.0)
+  totalRides       Int      @default(0)
+  isAvailable      Boolean  @default(false)
+  currentLatitude  Float?
+  currentLongitude Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isAvailable])
+  @@index([currentLatitude, currentLongitude])
+}
+
+model Ride {
+  id                   String        @id @default(uuid())
+  passengerId          String
+  driverId             String?
+  pickupAddress        String
+  pickupLatitude       Float
+  pickupLongitude      Float
+  destinationAddress   String
+  destinationLatitude  Float
+  destinationLongitude Float
+  estimatedPrice       Float
+  finalPrice           Float?
+  distance             Float
+  estimatedDuration    Int
+  status               RideStatus    @default(REQUESTED)
+  paymentMethod        PaymentMethod
+  paymentStatus        PaymentStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+  acceptedAt  DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  passenger User  @relation("PassengerRides", fields: [passengerId], references: [id])
+  driver    User? @relation("DriverRides", fields: [driverId], references: [id])
+
+  rating Rating?
+}
+
+model Rating {
+  id          String   @id @default(uuid())
+  rideId      String   @unique
+  passengerId String
+  driverId    String
+  rating      Int
+  comment     String?
+
+  createdAt DateTime @default(now())
+
+  ride      Ride @relation(fields: [rideId], references: [id])
+  passenger User @relation("PassengerRatings", fields: [passengerId], references: [id])
+  driver    User @relation("DriverRatings", fields: [driverId], references: [id])
+}
+
+model TouristSpot {
+  id            String   @id @default(uuid())
+  namePT        String   @unique
+  nameEN        String
+  descriptionPT String
+  descriptionEN String
+  tipsPT        String
+  tipsEN        String
+  latitude      Float
+  longitude     Float
+  imageUrl      String
+  createdAt     DateTime @default(now())
+}
+
+model Restaurant {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  cuisine       String
+  descriptionPT String
+  descriptionEN String
+  phone         String
+  address       String
+  latitude      Float
+  longitude     Float
+  openingHours  String
+  imageUrl      String
+  createdAt     DateTime @default(now())
+}
+
+model Hotel {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  stars         Int
+  descriptionPT String
+  descriptionEN String
+  phone         String
+  address       String
+  latitude      Float
+  longitude     Float
+  imageUrl      String
+  createdAt     DateTime @default(now())
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  itemType  ItemType
+  itemId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemType, itemId])
+}
