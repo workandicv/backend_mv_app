@@ -13,7 +13,7 @@ export async function GET() {
 
     return Response.json({
       success: true,
-      time: result.rows[0],
+      data: result.rows,
     });
   } catch (error) {
     return Response.json({
