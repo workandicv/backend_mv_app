@@ -5,14 +5,19 @@ import { PrismaClient } from "@prisma/client";
 const app = express();
 const prisma = new PrismaClient();
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
+// 🔥 Rota teste (para ver se API está online)
+app.get("/", (req, res) => {
   res.json({ message: "API está a funcionar 🚀" });
 });
 
-// COLOCA A ROTA AQUI
+
+// ======================
+// 👤 CRIAR USUÁRIO
+// ======================
 app.post("/users", async (req, res) => {
   try {
     const { email, password, name, phone, userType, driverProfile } = req.body;
@@ -24,33 +29,59 @@ app.post("/users", async (req, res) => {
         name,
         phone,
         userType,
-        driverProfile: userType === "DRIVER" && driverProfile
-          ? {
-              create: {
-                vehicleModel: driverProfile.vehicleModel,
-                vehiclePlate: driverProfile.vehiclePlate,
-                vehicleColor: driverProfile.vehicleColor,
-                licenseNumber: driverProfile.licenseNumber,
-              },
-            }
-          : undefined,
+        driverProfile:
+          userType === "DRIVER" && driverProfile
+            ? {
+                create: {
+                  vehicleModel: driverProfile.vehicleModel,
+                  vehiclePlate: driverProfile.vehiclePlate,
+                  vehicleColor: driverProfile.vehicleColor,
+                  licenseNumber: driverProfile.licenseNumber,
+                },
+              }
+            : undefined,
+      },
+      include: {
+        driverProfile: true,
       },
     });
 
     res.status(201).json(user);
   } catch (error) {
-    console.log("ERRO:", error);
+    console.log("ERRO CREATE USER:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// A ROTA LOGIN
+
+// ======================
+// 📋 LISTAR USUÁRIOS (CORRIGIDO)
+// ======================
+app.get("/users", async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      include: {
+        driverProfile: true,
+      },
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.log("ERRO GET USERS:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// ======================
+// 🔐 LOGIN
+// ======================
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
 
     if (!user) {
@@ -68,17 +99,21 @@ app.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        userType: user.userType
-      }
+        userType: user.userType,
+      },
     });
-
   } catch (error) {
     console.log("ERRO LOGIN:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 🔥 NÃO APAGAR ISTO
-app.listen(3001, "0.0.0.0", () => {
-  console.log("Servidor rodando na porta 3001");
+
+// ======================
+// 🚀 START SERVER (RAILWAY)
+// ======================
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });

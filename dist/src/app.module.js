@@ -10,6 +10,7 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const core_1 = require("@nestjs/core");
+const app_controller_1 = require("./app.controller");
 const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./auth/auth.module");
 const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
@@ -37,6 +38,7 @@ exports.AppModule = AppModule = __decorate([
             hotels_module_1.HotelsModule,
             favorites_module_1.FavoritesModule,
         ],
+        controllers: [app_controller_1.AppController],
         providers: [
             {
                 provide: core_1.APP_GUARD,
