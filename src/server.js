@@ -3,7 +3,7 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 
 const app = express();
-const express = require("express");
+
 const prisma = new PrismaClient();
 
 // Middlewares
